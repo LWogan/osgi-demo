@@ -8,6 +8,7 @@ import org.osgi.service.log.LogListener
 import org.osgi.service.log.LogReaderService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.System.out
 
 @Component(immediate = true)
 class LogReader {
@@ -25,6 +26,6 @@ class LogReader {
 class LogWriter : LogListener {
 
     override fun logged(entry: LogEntry) {
-        println("Custom-Bundle-Logger:: " + entry.time.toString() + " - " + entry.logLevel.name + ": " +  entry.message)
+        out.printf("Custom-Bundle-Logger::%s-%s-%s: %s", entry.loggerName, entry.time.toString(), entry.logLevel.name, entry.message)
     }
 }

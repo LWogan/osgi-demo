@@ -59,29 +59,20 @@ fun main(args: Array<String>) {
     latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
     latestId = saveBundlesToDB(sessionFactory, "/greetings", latestId)
 
-
     val dbBundles = readAllBundlesFromDB(sessionFactory)
-
 
     val activator = HostActivator()
     val config = mapOf(
-            Pair("org.osgi.service.log.admin.loglevel", "INFO"), Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)), Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
+            Pair("org.osgi.service.log.admin.loglevel", "INFO"),
+            Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)),
+            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
     )
-
     val felix = Felix(config)
     felix.start()
     val context = activator.context()!!
 
 
     installAndStartFromDB(context, dbBundles)
-
-    /*installAndStart(context, "/core-bundles")
-    installAndStart(context, "/logger")
-    var greetings = installBundles(context, "/greetings")
-    var yos = installBundles(context, "/yo")
-    startBundles(greetings)
-    startBundles(yos)*/
-
 
     //clear felix cache
     felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
