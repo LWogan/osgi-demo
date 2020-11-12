@@ -1,0 +1,41 @@
+buildscript {
+    dependencies {
+        classpath "org.jetbrains.kotlin.plugin.jpa:org.jetbrains.kotlin.plugin.jpa.gradle.plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-noarg:$kotlin_version"
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+apply plugin: "kotlin-jpa"
+
+version 'unspecified'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlin_version"
+
+    implementation "org.apache.felix:org.apache.felix.framework:$felix_version"
+
+    compileOnly "org.osgi:osgi.core:$osgi_version"
+
+    compile "org.slf4j:slf4j-api:$slf4j_version"
+    compile "org.hibernate:hibernate-core:$hibernate_version"
+    compile group: 'com.h2database', name: 'h2', version: '1.4.200'
+
+    testCompile "org.hibernate:hibernate-testing:$hibernate_version"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    useJUnitPlatform()
+}

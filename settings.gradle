@@ -4,7 +4,7 @@ pluginManagement {
     }
 
     plugins {
-        id 'biz.aQute.bnd.builder' version bnd_version
+        id 'biz.aQute.bnd.builder' version bnd_version apply false
         id 'org.jetbrains.kotlin.jvm' version kotlin_version
         id 'com.gradle.enterprise' version '3.4.1'
     }
@@ -16,8 +16,10 @@ plugins {
 
 rootProject.name = 'OSGi example'
 
-include 'api'
-include 'impl'
+include 'greetings'
+include 'yo'
+include 'launcher'
+include 'log-reader'
 
 gradleEnterprise {
     buildScan {
