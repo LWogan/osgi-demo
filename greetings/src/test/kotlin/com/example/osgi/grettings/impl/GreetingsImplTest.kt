@@ -1,6 +1,5 @@
 package com.example.osgi.grettings.impl
 
-import com.example.osgi.grettings.impl.GreetingsImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

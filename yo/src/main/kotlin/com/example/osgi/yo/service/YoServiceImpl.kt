@@ -1,4 +1,4 @@
-package com.example.osgi.yo;
+package com.example.osgi.yo.service;
 
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

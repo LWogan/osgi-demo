@@ -14,7 +14,7 @@ plugins {
     id 'com.gradle.enterprise'
 }
 
-rootProject.name = 'OSGi example'
+rootProject.name = 'osgi-demo'
 
 include 'greetings'
 include 'yo'

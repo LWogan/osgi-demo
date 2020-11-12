@@ -25,6 +25,6 @@ class LogReader {
 class LogWriter : LogListener {
 
     override fun logged(entry: LogEntry) {
-        println("Custom-Logger:: " + entry.time.toString() + " - " + entry.logLevel.name + ": " +  entry.message)
+        println("Custom-Bundle-Logger:: " + entry.time.toString() + " - " + entry.logLevel.name + ": " +  entry.message)
     }
 }

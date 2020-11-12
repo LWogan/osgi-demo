@@ -1,9 +1,8 @@
 package com.example.osgi.yo.activator;
 
-import com.example.osgi.yo.YoService
-import com.example.osgi.yo.YoServiceImpl
+import com.example.osgi.yo.service.YoService
+import com.example.osgi.yo.service.YoServiceImpl
 import org.osgi.framework.BundleContext
-import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -18,7 +17,7 @@ class YoActivator @Activate constructor(
 
     @Activate
     fun doIt(context: BundleContext) {
-        val yoServiceRegistration = context.registerService(YoService::class.java.canonicalName, YoServiceImpl(logger), null)
+        context.registerService(YoService::class.java.canonicalName, YoServiceImpl(logger), null)
         logger.info("Registered YoService {}", this::class.java)
     }
 }

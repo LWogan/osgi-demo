@@ -6,7 +6,7 @@ import javax.persistence.*
 
 
 @Entity
-@Table(name = "greetings", indexes = [(Index(name = "bundle_id_idx", columnList = "bundle_id"))])
+@Table(name = "bundles", indexes = [(Index(name = "bundle_id_idx", columnList = "bundle_id"))])
 class DBBundle(
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)

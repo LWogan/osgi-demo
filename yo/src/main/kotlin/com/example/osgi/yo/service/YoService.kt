@@ -1,4 +1,4 @@
-package com.example.osgi.yo;
+package com.example.osgi.yo.service;
 
 interface YoService {
     fun doSomething()

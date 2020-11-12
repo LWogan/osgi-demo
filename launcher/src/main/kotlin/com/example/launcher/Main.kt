@@ -45,34 +45,23 @@ val resourcesPath = Paths.get(projectDirAbsolutePath, "/launcher/src/main/resour
 
 fun main(args: Array<String>) {
 
-    val properties = propertiesFromResource("/hibernate.properties")
+    //clear felix cache
+    var felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
+    felixDir.deleteRecursively()
 
+    val properties = propertiesFromResource("/hibernate.properties")
     val configuration = buildHibernateConfiguration(properties, DBCpk::class.java, DBBundle::class.java)
     val sessionFactory = buildSessionFactory(configuration)
 
-    sessionFactory.transaction { session ->
-        session.save(DBCpk(0))
-    }
-
-    val entity = sessionFactory.transaction { session ->
-        session.createQuery("from DBCpk").uniqueResult() as DBCpk
-    }
-
-    val entity1 = sessionFactory.transaction { session ->
-        val cb: CriteriaBuilder = session.getCriteriaBuilder()
-        val cq: CriteriaQuery<DBCpk> = cb.createQuery(DBCpk::class.java)
-        val rootEntry: Root<DBCpk> = cq.from(DBCpk::class.java)
-        val all: CriteriaQuery<DBCpk> = cq.select(rootEntry)
-        val allQuery: TypedQuery<DBCpk> = session.createQuery(all)
-        allQuery.resultList as List<DBCpk>
-    }
+    var latestId = 0
+    latestId = saveBundlesToDB(sessionFactory, "/core-bundles", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/greetings", latestId)
 
 
-    println(entity1.size)
+    val dbBundles = readAllBundlesFromDB(sessionFactory)
 
-    //clear felix cache
-    val felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
-    felixDir.deleteRecursively()
 
     val activator = HostActivator()
     val config = mapOf(
@@ -83,19 +72,47 @@ fun main(args: Array<String>) {
     felix.start()
     val context = activator.context()!!
 
-    installAndStart(context, "/core-bundles")
+
+    installAndStartFromDB(context, dbBundles)
+
+    /*installAndStart(context, "/core-bundles")
     installAndStart(context, "/logger")
     var greetings = installBundles(context, "/greetings")
     var yos = installBundles(context, "/yo")
     startBundles(greetings)
-    startBundles(yos)
+    startBundles(yos)*/
 
+
+    //clear felix cache
+    felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
+    felixDir.deleteRecursively()
 
     felix.stop()
     felix.waitForStop(0)
 }
 
-private fun installAndStart(context: BundleContext, dir: String) {
+
+/******************************************
+ * **** OSGI INSTALL & START HELPERS ******
+ *****************************************/
+private fun installAndStartFromDB(context: BundleContext, dbBundles: List<DBBundle>) {
+    val bundles = mutableListOf<Bundle>()
+    for (dbBundle in dbBundles) {
+        println("about to install ${dbBundle.filename}")
+        bundles.add(context.installBundle(dbBundle.filename, dbBundle.content?.inputStream()))
+    }
+
+    for (bundle in bundles) {
+        try {
+            println("about to start ${bundle.symbolicName}")
+            bundle.start()
+        } catch (e: BundleException) {
+            println(e.message)
+        }
+    }
+}
+
+private fun installAndStartFromResourceDir(context: BundleContext, dir: String) {
     val dependencies = installBundles(context, dir)
     startBundles(dependencies)
 }
@@ -130,6 +147,39 @@ private fun installBundles(context: BundleContext, dir: String): MutableList<Bun
     return dependencies
 }
 
+/******************************************
+ * **** HIBERNATE READ & WRITE ***********
+ *****************************************/
+private fun saveBundlesToDB(sessionFactory: SessionFactory, dir: String, id: Int): Int {
+    var latestId = id
+    for (file in File(resourcesPath + dir).walk()) {
+        if (file.name.endsWith(".jar")) {
+            var inputstream = FileInputStream(File(file.absolutePath))
+
+            sessionFactory.transaction { session ->
+                session.save(DBBundle(id, inputstream.readAllBytes(), file.name))
+                latestId++
+            }
+        }
+    }
+
+    return latestId
+}
+
+private fun readAllBundlesFromDB(sessionFactory: SessionFactory): List<DBBundle> {
+    return sessionFactory.transaction { session ->
+        val cb: CriteriaBuilder = session.criteriaBuilder
+        val cq: CriteriaQuery<DBBundle> = cb.createQuery(DBBundle::class.java)
+        val rootEntry: Root<DBBundle> = cq.from(DBBundle::class.java)
+        val all: CriteriaQuery<DBBundle> = cq.select(rootEntry)
+        val allQuery: TypedQuery<DBBundle> = session.createQuery(all)
+        allQuery.resultList as List<DBBundle>
+    }
+}
+
+/******************************************
+ * **** HIBERNATE CONFIGURATION ***********
+ *****************************************/
 fun buildHibernateConfiguration(hibernateProperties: Properties, vararg annotatedClasses: Class<*>): Configuration {
     val configuration = Configuration()
     configuration.properties = hibernateProperties

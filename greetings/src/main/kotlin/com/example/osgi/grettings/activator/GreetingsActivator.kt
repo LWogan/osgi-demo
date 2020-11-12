@@ -1,11 +1,9 @@
 package com.example.osgi.grettings.activator
 
-import com.example.osgi.yo.YoService
+import com.example.osgi.yo.service.YoService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 @Component
 class GreetingsActivator @Activate constructor(
@@ -18,6 +16,7 @@ class GreetingsActivator @Activate constructor(
     @Activate
     fun doIt() {
         logger.info("Activated GreetingsActivator {}", this::class.java)
+        logger.info("GreetingsActivator calling out to yo service...")
         yoService.doSomething()
     }
 
