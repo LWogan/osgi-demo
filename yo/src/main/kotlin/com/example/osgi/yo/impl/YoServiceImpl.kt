@@ -1,5 +1,6 @@
-package com.example.osgi.yo.service;
+package com.example.osgi.yo.impl;
 
+import com.example.osgi.yo.service.YoService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
