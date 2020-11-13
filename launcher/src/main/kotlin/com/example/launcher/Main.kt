@@ -74,12 +74,13 @@ fun main(args: Array<String>) {
 
     installAndStartFromDB(context, dbBundles)
 
-    //clear felix cache
-    felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
-    felixDir.deleteRecursively()
 
     felix.stop()
     felix.waitForStop(0)
+
+    //clear felix cache
+    var felixDir2 = File(Paths.get("felix-cache").toAbsolutePath().toString())
+    var success = felixDir2.deleteRecursively()
 }
 
 
