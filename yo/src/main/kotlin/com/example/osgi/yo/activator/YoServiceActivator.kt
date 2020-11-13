@@ -1,7 +1,7 @@
 package com.example.osgi.yo.activator;
 
 import com.example.osgi.yo.service.YoService
-import com.example.osgi.yo.service.YoServiceImpl
+import com.example.osgi.yo.impl.YoServiceImpl
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
