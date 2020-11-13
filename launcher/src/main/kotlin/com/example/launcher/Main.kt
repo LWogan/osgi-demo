@@ -8,7 +8,6 @@ import org.hibernate.SessionFactory
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder
 import org.hibernate.cfg.Configuration
 import org.osgi.framework.Bundle
-import org.osgi.framework.BundleActivator
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import java.io.File
@@ -131,7 +130,7 @@ private fun clearFelixCache(): File {
 
 private fun saveBundlesFromResourcesToDB(sessionFactory: SessionFactory) {
     var latestId = 0
-    latestId = saveBundlesToDB(sessionFactory, "/core-bundles", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/dependencies", latestId)
     latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
     latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
     saveBundlesToDB(sessionFactory, "/greetings", latestId)
