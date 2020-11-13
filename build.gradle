@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
     id 'base'
+    id 'java'
 }
 
 subprojects {
@@ -41,4 +42,24 @@ wrapper {
     gradleVersion = '6.6.1'
     distributionType = Wrapper.DistributionType.ALL
 }
+
+task copyYoJarToResources(type: Copy) {
+    from 'yo/build/libs/yo-1.0.0-SNAPSHOT.jar'
+    into "launcher/src/main/resources/yo/"
+}
+
+task copyGreetingsJarToResources(type: Copy) {
+    from 'greetings/build/libs/greetings-1.0.0-SNAPSHOT.jar'
+    into "launcher/src/main/resources/greetings/"
+}
+
+task copyLogReaderJarToResources(type: Copy) {
+    from 'log-reader/build/libs/log-reader-1.0.0-SNAPSHOT.jar'
+    into "launcher/src/main/resources/logger/"
+}
+
+task copyJarsToLauncherResources(dependsOn: [copyYoJarToResources, copyGreetingsJarToResources, copyLogReaderJarToResources])
+
+
+build.finalizedBy(copyJarsToLauncherResources)
 
