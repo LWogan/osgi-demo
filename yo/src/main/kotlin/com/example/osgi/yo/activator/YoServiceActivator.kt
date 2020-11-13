@@ -10,7 +10,7 @@ import org.osgi.service.log.Logger
 import org.osgi.service.log.LoggerFactory
 
 @Component(immediate = true)
-class YoActivator @Activate constructor(
+class YoServiceActivator @Activate constructor(
         @Reference(service = LoggerFactory::class)
         private val logger: Logger
 ) {
