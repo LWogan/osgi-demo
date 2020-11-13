@@ -19,6 +19,8 @@ import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Root
 
+val projectDirAbsolutePath = Paths.get("").toAbsolutePath().toString()
+val resourcesPath = Paths.get(projectDirAbsolutePath, "/launcher/src/main/resources/").toAbsolutePath().toString()
 
 class HostActivator : BundleActivator {
     private var bundleContext : BundleContext? = null
@@ -40,27 +42,37 @@ class HostActivator : BundleActivator {
     }
 }
 
-val projectDirAbsolutePath = Paths.get("").toAbsolutePath().toString()
-val resourcesPath = Paths.get(projectDirAbsolutePath, "/launcher/src/main/resources/").toAbsolutePath().toString()
-
 fun main(args: Array<String>) {
 
     //clear felix cache
-    var felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
-    felixDir.deleteRecursively()
+    clearFelixCache()
 
-    val properties = propertiesFromResource("/hibernate.properties")
-    val configuration = buildHibernateConfiguration(properties, DBCpk::class.java, DBBundle::class.java)
-    val sessionFactory = buildSessionFactory(configuration)
+    //get hibernate session
+    val sessionFactory = getSessionFactory()
 
-    var latestId = 0
-    latestId = saveBundlesToDB(sessionFactory, "/core-bundles", latestId)
-    latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
-    latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
-    latestId = saveBundlesToDB(sessionFactory, "/greetings", latestId)
+    //save bundles
+    saveBundlesFromResourcesToDB(sessionFactory)
 
+    //read bundles back
     val dbBundles = readAllBundlesFromDB(sessionFactory)
 
+    //run OSGi framework
+    val (felix, context) = activateOSGiFramework()
+
+    //install and start db bundles
+    installAndStartFromDB(context, dbBundles)
+
+    //Stop felix and clear cache
+    felix.stop()
+    felix.waitForStop(0)
+    clearFelixCache()
+}
+
+/******************************************
+ * **** OSGI INSTALL & START HELPERS ******
+ *****************************************/
+
+private fun activateOSGiFramework(): Pair<Felix, BundleContext> {
     val activator = HostActivator()
     val config = mapOf(
             Pair("org.osgi.service.log.admin.loglevel", "INFO"),
@@ -70,23 +82,9 @@ fun main(args: Array<String>) {
     val felix = Felix(config)
     felix.start()
     val context = activator.context()!!
-
-
-    installAndStartFromDB(context, dbBundles)
-
-
-    felix.stop()
-    felix.waitForStop(0)
-
-    //clear felix cache
-    felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
-    felixDir.deleteRecursively()
+    return Pair(felix, context)
 }
 
-
-/******************************************
- * **** OSGI INSTALL & START HELPERS ******
- *****************************************/
 private fun installAndStartFromDB(context: BundleContext, dbBundles: List<DBBundle>) {
     val bundles = mutableListOf<Bundle>()
     for (dbBundle in dbBundles) {
@@ -139,9 +137,25 @@ private fun installBundles(context: BundleContext, dir: String): MutableList<Bun
     return dependencies
 }
 
+private fun clearFelixCache(): File {
+    var felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
+    felixDir.deleteRecursively()
+    return felixDir
+}
+
+
 /******************************************
  * **** HIBERNATE READ & WRITE ***********
  *****************************************/
+
+private fun saveBundlesFromResourcesToDB(sessionFactory: SessionFactory) {
+    var latestId = 0
+    latestId = saveBundlesToDB(sessionFactory, "/core-bundles", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
+    saveBundlesToDB(sessionFactory, "/greetings", latestId)
+}
+
 private fun saveBundlesToDB(sessionFactory: SessionFactory, dir: String, id: Int): Int {
     var latestId = id
     for (file in File(resourcesPath + dir).walk()) {
@@ -172,6 +186,14 @@ private fun readAllBundlesFromDB(sessionFactory: SessionFactory): List<DBBundle>
 /******************************************
  * **** HIBERNATE CONFIGURATION ***********
  *****************************************/
+
+private fun getSessionFactory(): SessionFactory {
+    val properties = propertiesFromResource("/hibernate.properties")
+    val configuration = buildHibernateConfiguration(properties, DBCpk::class.java, DBBundle::class.java)
+    val sessionFactory = buildSessionFactory(configuration)
+    return sessionFactory
+}
+
 fun buildHibernateConfiguration(hibernateProperties: Properties, vararg annotatedClasses: Class<*>): Configuration {
     val configuration = Configuration()
     configuration.properties = hibernateProperties
