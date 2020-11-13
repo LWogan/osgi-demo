@@ -57,7 +57,7 @@ private fun activateOSGiFramework(): Pair<Felix, BundleContext> {
     val config = mapOf(
             Pair("org.osgi.service.log.admin.loglevel", "INFO"),
             Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)),
-            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
+            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "org.apache.activemq.artemis.api.core,sun.net.www.protocol.jar,org.iq80.snappy,co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,sun.security.x509, net.i2p.crypto.eddsa.math")
     )
     val felix = Felix(config)
     felix.start()
@@ -82,40 +82,6 @@ private fun installAndStartFromDB(context: BundleContext, dbBundles: List<DBBund
     }
 }
 
-private fun installAndStartFromResourceDir(context: BundleContext, dir: String) {
-    val dependencies = installBundles(context, dir)
-    startBundles(dependencies)
-}
-
-private fun startBundles(dependencies: MutableList<Bundle>) {
-    var nrStarted = 0
-    while (nrStarted < dependencies.size) {
-        for (b in dependencies) {
-            println("about to start ${b.symbolicName}")
-            try {
-                nrStarted++
-                b.start()
-            } catch (e: BundleException) {
-                println(e.message)
-            }
-        }
-    }
-}
-
-private fun installBundles(context: BundleContext, dir: String): MutableList<Bundle> {
-
-    val dependencies = mutableListOf<Bundle>()
-
-    for (file in File(resourcesPath + dir).walk()) {
-        if (file.name.endsWith(".jar")) {
-            println("installing bundle from ${file.name}")
-            var inputstreamDep = FileInputStream(File(file.absolutePath))
-            val b = context.installBundle(file.name, inputstreamDep)
-            dependencies.add(b)
-        }
-    }
-    return dependencies
-}
 
 private fun clearFelixCache(): File {
     var felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
@@ -131,8 +97,10 @@ private fun clearFelixCache(): File {
 private fun saveBundlesFromResourcesToDB(sessionFactory: SessionFactory) {
     var latestId = 0
     latestId = saveBundlesToDB(sessionFactory, "/dependencies", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/core-serialization", latestId)
     latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
     latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
+    latestId = saveBundlesToDB(sessionFactory, "/core", latestId)
     saveBundlesToDB(sessionFactory, "/greetings", latestId)
 }
 
