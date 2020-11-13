@@ -1,5 +1,6 @@
 package com.example.launcher
 
+import com.example.launcher.activator.HostActivator
 import org.apache.felix.framework.Felix
 import org.apache.felix.framework.util.FelixConstants
 import org.hibernate.Session
@@ -21,26 +22,6 @@ import javax.persistence.criteria.Root
 
 val projectDirAbsolutePath = Paths.get("").toAbsolutePath().toString()
 val resourcesPath = Paths.get(projectDirAbsolutePath, "/launcher/src/main/resources/").toAbsolutePath().toString()
-
-class HostActivator : BundleActivator {
-    private var bundleContext : BundleContext? = null
-
-    override fun start(context: BundleContext?) {
-        bundleContext = context
-    }
-
-    override fun stop(context: BundleContext?) {
-        bundleContext = null
-    }
-
-    fun bundles(): List<Bundle> {
-        return bundleContext?.bundles?.toList() ?: emptyList()
-    }
-
-    fun context(): BundleContext? {
-        return bundleContext
-    }
-}
 
 fun main(args: Array<String>) {
 
