@@ -7,7 +7,7 @@
 Main.kt will:
 - create a hibernate session
 - save all bundles in the defined resource folders to the bundles table
-- An OSGi framework work will be started
-- bundles will be read from the DB, installed and started
+- launch an OSGi framework
+- read bundles from the DB, install and start them
 - greetings, yo and log-reader bundles communicate via OSGi Declarative Services
  
