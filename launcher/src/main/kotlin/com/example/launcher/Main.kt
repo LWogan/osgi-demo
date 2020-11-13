@@ -79,8 +79,8 @@ fun main(args: Array<String>) {
     felix.waitForStop(0)
 
     //clear felix cache
-    var felixDir2 = File(Paths.get("felix-cache").toAbsolutePath().toString())
-    var success = felixDir2.deleteRecursively()
+    felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
+    felixDir.deleteRecursively()
 }
 
 
