@@ -9,5 +9,5 @@ Main.kt will:
 - save all bundles in the defined resource folders to the bundles table
 - launch an OSGi framework
 - read bundles from the DB, install and start them
-- greetings, yo and log-reader bundles communicate via OSGi Declarative Services
+- greetings, yo and log-reader bundles communicate in their activator classes via OSGi Declarative Services
  
