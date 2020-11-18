@@ -4,12 +4,11 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import java.io.InputStream
 
-class SandboxFactory(private val sandboxes: HashSet<Sandbox>) {
+class SandboxFactory(val sandboxes: HashSet<Sandbox>) {
 
     fun createSandBox(name: String, bundleContext: BundleContext): Sandbox {
         val sandbox = Sandbox.create(name, bundleContext)
         sandboxes.add(sandbox)
-        sandbox.addVisibility(sandbox)
         return sandbox
     }
 }
@@ -25,9 +24,8 @@ class Sandbox private constructor(val name: String, private val bundleContext: B
         }
     }
 
-    fun installBundle(location: String, stream: InputStream) : Bundle {
+    fun installBundle(location: String, stream: InputStream?) : Bundle {
         //TODO it's not possible to determine if you are adding a bundle to a sandbox twice inside the hooks but may be possible to validate here
-
         var bundle = bundleContext.installBundle(name + SANDBOX_NAME_DELIM + location, stream)
         installedBundles.add(bundle.bundleId)
         return bundle
@@ -46,13 +44,9 @@ class Sandbox private constructor(val name: String, private val bundleContext: B
     }
 
     fun isVisibleNonTransitive(bundle: Bundle) : Boolean {
-        if (installedBundles.contains(bundle.bundleId)) {
-            return true
-        } else {
-            for (sandbox in visibleSandboxes) {
-                if (sandbox.installedBundles.contains(bundle.bundleId)) {
-                    return true
-                }
+        for (sandbox in visibleSandboxes) {
+            if (sandbox.installedBundles.contains(bundle.bundleId)) {
+                return true
             }
         }
 

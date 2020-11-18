@@ -34,33 +34,57 @@ class IsolatingResolverHook(private var currentSandbox: Sandbox?, private var sa
     override fun end() {
     }
 
+    /**
+     * Candidates contain all bundles installed but not started from all sandboxes.
+     * If something is removed here then this triggers some felix code in prepareResolverHooks to set a whitelist.
+     * The whitelist only contains bundles from the candidates left and this is always missing the system bundle packages.
+     * org.apache.felix.resolver.Candidates.populate
+     * Removing this hook doesn't have any affect on felix finding the bundle that wants to start and allows system bundle capabilities to be found
+     */
     private fun filterRevisionCandidatesBySandbox(candidates: MutableCollection<BundleRevision>? ) {
-        var copyCandidates = candidates?.toMutableList()
-
-        if (copyCandidates != null) {
-            for (candidate in copyCandidates) {
-                var candidateSandbox = candidate.bundle.owningSandbox(sandboxes)
-
-                if (currentSandbox == null && candidateSandbox != null) {
-                    candidates?.remove(candidate)
-                } else if (candidateSandbox != null && currentSandbox != null && !currentSandbox!!.isVisibleNonTransitive(candidateSandbox)) {
-                    candidates?.remove(candidate)
-                }
-            }
-        }
+        //Do nothing
     }
 
+    /**
+     * Filter capability candidates out that are not in the same sandbox
+     * or are not visible by the current sandbox.
+     * If candidates are found in the current sandbox and another visible sandbox
+     * then choose the candidate from it's own sandbox.
+     */
     private fun filterCapabilityCandidatesBySandbox(candidates: MutableCollection<BundleCapability>? ) {
         var copyCandidates = candidates?.toMutableList()
 
         if (copyCandidates != null) {
-            for (candidate in copyCandidates) {
-                var candidateSandbox = candidate.revision.bundle.owningSandbox(sandboxes)
+            var candidateFoundInOwnSandbox : BundleCapability? = null
 
-                if (currentSandbox == null && candidateSandbox != null) {
+            for (candidate in copyCandidates) {
+                var candidateBundle = candidate.revision.bundle
+                var candidateSandbox = candidateBundle.owningSandbox(sandboxes)
+
+                if (candidateSandbox == null) {
+                    //candidate bundle is in main bundle space
+                    continue
+                }
+                //TODO: double check null assertions for currentsandbox
+                else if (currentSandbox == null) {
+                    //current bundle is in main bundle space but candidate is in a sandbox
                     candidates?.remove(candidate)
-                } else if (candidateSandbox != null && currentSandbox != null && !currentSandbox!!.isVisibleNonTransitive(candidateSandbox)) {
+                } else if (currentSandbox!!.installedBundles.contains(candidateBundle.bundleId)) {
+                    //candidate bundle is in same sandbox and should be chosen
+                    candidateFoundInOwnSandbox = candidate
+                    break
+                } else if (!currentSandbox!!.isVisibleNonTransitive(candidateSandbox)) {
+                    //candidate is in another sandbox and is not visible
                     candidates?.remove(candidate)
+                }
+            }
+
+            if (candidateFoundInOwnSandbox != null && candidates?.size!! > 1) {
+                //only use candidate from same sandbox. list at this point will contain candidates from own sandbox and others
+                for (candidate in copyCandidates) {
+                    if (candidate != candidateFoundInOwnSandbox) {
+                        candidates.remove(candidate)
+                    }
                 }
             }
         }
@@ -75,7 +99,8 @@ class IsolatingResolverHookFactory(private var sandboxes: HashSet<Sandbox>) : Re
      * @param triggers the bundle triggering the resolver
      */
     override fun begin(triggers: MutableCollection<BundleRevision>?): ResolverHook {
-        val sandbox = triggers!!.single().bundle.owningSandbox(sandboxes)
+        val bundle = triggers!!.single().bundle
+        val sandbox = bundle.owningSandbox(sandboxes)
         return IsolatingResolverHook(sandbox, sandboxes)
     }
 }
