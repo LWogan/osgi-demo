@@ -8,10 +8,13 @@ plugins {
 }
 
 subprojects {
-    group 'com.example.osgi'
+    group 'com.example.osgi.launcher.sandbox'
     version = '1.0.0-SNAPSHOT'
 
     repositories {
+        maven {
+            url = "$artifactoryContextUrl/corda-dependencies-dev"
+        }
         mavenCentral()
     }
 

@@ -27,5 +27,5 @@
 	junit-platform-engine;version='[1.6.2,1.6.3)',\
 	junit-platform-launcher;version='[1.6.2,1.6.3)',\
 	log-reader-tests;version='[1.0.0,1.0.1)',\
-	org.jetbrains.kotlin.osgi-bundle;version='[1.4.0,1.4.1)',\
+	org.jetbrains.kotlin.osgi-bundle;version='[1.4.10,1.4.11)',\
 	org.opentest4j;version='[1.2.0,1.2.1)'

@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
     //run OSGi framework
     val (felix, context, sandboxFactory) = activateOSGiFramework()
 
-    //install and start db bundles
+    //install bundles to sandboxes
     var bundlesFromAllSandboxes = installSandboxesFromDBCPKs(context, sandboxFactory, dbCPKs)
 
     makeSandboxesAllVisibleToEachOther(sandboxFactory)
@@ -85,7 +85,7 @@ private fun activateOSGiFramework(): Triple<Felix, BundleContext, SandboxFactory
     val config = mapOf(
             Pair("org.osgi.service.log.admin.loglevel", "INFO"),
             Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)),
-            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
+            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,sun.security.x509")
     )
     val felix = Felix(config)
     felix.start()
@@ -147,7 +147,6 @@ private fun saveBundlesAndCPkToDB(sessionFactory: SessionFactory, dir: String, i
             var dbBundle = DBBundle(id, inputstream.readAllBytes(), file.name)
 
             bundles.add(dbBundle)
-
         }
     }
 
