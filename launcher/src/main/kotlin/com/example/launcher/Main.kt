@@ -1,6 +1,7 @@
 package com.example.launcher
 
 import com.example.launcher.activator.HostActivator
+import com.example.launcher.sandbox.*
 import org.apache.felix.framework.Felix
 import org.apache.felix.framework.util.FelixConstants
 import org.hibernate.Session
@@ -10,6 +11,9 @@ import org.hibernate.cfg.Configuration
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.hooks.bundle.CollisionHook
+import org.osgi.framework.hooks.bundle.FindHook
+import org.osgi.framework.hooks.resolver.ResolverHookFactory
 import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Paths
@@ -18,6 +22,7 @@ import javax.persistence.TypedQuery
 import javax.persistence.criteria.CriteriaBuilder
 import javax.persistence.criteria.CriteriaQuery
 import javax.persistence.criteria.Root
+import kotlin.collections.HashSet
 
 val projectDirAbsolutePath = Paths.get("").toAbsolutePath().toString()
 val resourcesPath = Paths.get(projectDirAbsolutePath, "/launcher/src/main/resources/").toAbsolutePath().toString()
@@ -30,17 +35,20 @@ fun main(args: Array<String>) {
     //get hibernate session
     val sessionFactory = getSessionFactory()
 
-    //save bundles
-    saveBundlesFromResourcesToDB(sessionFactory)
+    //treats file dirs as cpk and save them to db
+    saveBundlesFromResourcesToDbAsCPKs(sessionFactory)
 
-    //read bundles back
-    val dbBundles = readAllBundlesFromDB(sessionFactory)
+    val dbCPKs = readAllCPKsFromDB(sessionFactory)
 
     //run OSGi framework
-    val (felix, context) = activateOSGiFramework()
+    val (felix, context, sandboxFactory) = activateOSGiFramework()
 
     //install and start db bundles
-    installAndStartFromDB(context, dbBundles)
+    var bundlesFromAllSandboxes = installSandboxesFromDBCPKs(context, sandboxFactory, dbCPKs)
+
+    makeSandboxesAllVisibleToEachOther(sandboxFactory)
+
+    startBundles(bundlesFromAllSandboxes)
 
     //Stop felix and clear cache
     felix.stop()
@@ -48,31 +56,8 @@ fun main(args: Array<String>) {
     clearFelixCache()
 }
 
-/******************************************
- * **** OSGI INSTALL & START HELPERS ******
- *****************************************/
-
-private fun activateOSGiFramework(): Pair<Felix, BundleContext> {
-    val activator = HostActivator()
-    val config = mapOf(
-            Pair("org.osgi.service.log.admin.loglevel", "INFO"),
-            Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)),
-            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
-    )
-    val felix = Felix(config)
-    felix.start()
-    val context = activator.context()!!
-    return Pair(felix, context)
-}
-
-private fun installAndStartFromDB(context: BundleContext, dbBundles: List<DBBundle>) {
-    val bundles = mutableListOf<Bundle>()
-    for (dbBundle in dbBundles) {
-        println("about to install ${dbBundle.filename}")
-        bundles.add(context.installBundle(dbBundle.filename, dbBundle.content?.inputStream()))
-    }
-
-    for (bundle in bundles) {
+fun startBundles(bundlesFromAllSandboxes: MutableList<Bundle>) {
+    for (bundle in bundlesFromAllSandboxes) {
         try {
             println("about to start ${bundle.symbolicName}")
             bundle.start()
@@ -82,40 +67,57 @@ private fun installAndStartFromDB(context: BundleContext, dbBundles: List<DBBund
     }
 }
 
-private fun installAndStartFromResourceDir(context: BundleContext, dir: String) {
-    val dependencies = installBundles(context, dir)
-    startBundles(dependencies)
-}
-
-private fun startBundles(dependencies: MutableList<Bundle>) {
-    var nrStarted = 0
-    while (nrStarted < dependencies.size) {
-        for (b in dependencies) {
-            println("about to start ${b.symbolicName}")
-            try {
-                nrStarted++
-                b.start()
-            } catch (e: BundleException) {
-                println(e.message)
-            }
+fun makeSandboxesAllVisibleToEachOther(sandboxFactory: SandboxFactory) {
+    for (sandbox in sandboxFactory.sandboxes) {
+        var currentSandbox = sandbox
+        for (nextSandbox in sandboxFactory.sandboxes) {
+            currentSandbox.addVisibility(nextSandbox)
         }
     }
 }
 
-private fun installBundles(context: BundleContext, dir: String): MutableList<Bundle> {
+/******************************************
+ * **** OSGI INSTALL & START HELPERS ******
+ *****************************************/
 
-    val dependencies = mutableListOf<Bundle>()
+private fun activateOSGiFramework(): Triple<Felix, BundleContext, SandboxFactory> {
+    val activator = HostActivator()
+    val config = mapOf(
+            Pair("org.osgi.service.log.admin.loglevel", "INFO"),
+            Pair(FelixConstants.SYSTEMBUNDLE_ACTIVATORS_PROP, listOf(activator)),
+            Pair(FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, "co.paralleluniverse.fibers.instrument;version=0.8.2.r3,co.paralleluniverse.common.resource;version=0.8.2.r3,co.paralleluniverse.common.asm;version=0.8.2.r3,kotlin.streams.jdk8,kotlin.jdk7,sun.security.x509")
+    )
+    val felix = Felix(config)
+    felix.start()
+    val context = activator.context()!!
 
-    for (file in File(resourcesPath + dir).walk()) {
-        if (file.name.endsWith(".jar")) {
-            println("installing bundle from ${file.name}")
-            var inputstreamDep = FileInputStream(File(file.absolutePath))
-            val b = context.installBundle(file.name, inputstreamDep)
-            dependencies.add(b)
+    var sandboxes = HashSet<Sandbox>()
+    val sandboxFactory = SandboxFactory(sandboxes)
+
+    context.registerService(ResolverHookFactory::class.java, IsolatingResolverHookFactory(sandboxes), null)
+    context.registerService(CollisionHook::class.java, IsolatingCollisionBundleHook(sandboxes), null)
+    context.registerService(FindHook::class.java, IsolatingFindHook(sandboxes), null)
+
+
+    return Triple(felix, context, sandboxFactory)
+}
+
+
+private fun installSandboxesFromDBCPKs(context: BundleContext, sandboxFactory: SandboxFactory, dbCPKs: List<DBCpk>) : MutableList<Bundle> {
+    val bundles = mutableListOf<Bundle>()
+
+    for (dbCPK in dbCPKs) {
+        var sandbox = sandboxFactory.createSandBox(dbCPK.filename.toString(), context)
+
+        for (dbBundle in dbCPK.bundles!!) {
+            println("about to install ${dbBundle.filename}")
+            bundles.add(sandbox.installBundle(dbBundle.filename.toString(), dbBundle.content?.inputStream()))
         }
     }
-    return dependencies
+
+    return bundles
 }
+
 
 private fun clearFelixCache(): File {
     var felixDir = File(Paths.get("felix-cache").toAbsolutePath().toString())
@@ -128,40 +130,57 @@ private fun clearFelixCache(): File {
  * **** HIBERNATE READ & WRITE ***********
  *****************************************/
 
-private fun saveBundlesFromResourcesToDB(sessionFactory: SessionFactory) {
+private fun saveBundlesFromResourcesToDbAsCPKs(sessionFactory: SessionFactory) {
     var latestId = 0
-    latestId = saveBundlesToDB(sessionFactory, "/dependencies", latestId)
-    latestId = saveBundlesToDB(sessionFactory, "/logger", latestId)
-    latestId = saveBundlesToDB(sessionFactory, "/yo", latestId)
-    saveBundlesToDB(sessionFactory, "/greetings", latestId)
+    latestId = saveBundlesAndCPkToDB(sessionFactory, "/dependencies", latestId)
+    latestId = saveBundlesAndCPkToDB(sessionFactory, "/logger", latestId)
+    latestId = saveBundlesAndCPkToDB(sessionFactory, "/yo", latestId)
+    saveBundlesAndCPkToDB(sessionFactory, "/greetings", latestId)
 }
 
-private fun saveBundlesToDB(sessionFactory: SessionFactory, dir: String, id: Int): Int {
+private fun saveBundlesAndCPkToDB(sessionFactory: SessionFactory, dir: String, id: Int): Int {
     var latestId = id
+    var bundles = mutableListOf<DBBundle>()
     for (file in File(resourcesPath + dir).walk()) {
         if (file.name.endsWith(".jar")) {
             var inputstream = FileInputStream(File(file.absolutePath))
+            var dbBundle = DBBundle(id, inputstream.readAllBytes(), file.name)
 
-            sessionFactory.transaction { session ->
-                session.save(DBBundle(id, inputstream.readAllBytes(), file.name))
-                latestId++
-            }
+            bundles.add(dbBundle)
+
+        }
+    }
+
+    var cpk = DBCpk(latestId, bundles, filename = dir)
+    latestId++
+
+    sessionFactory.transaction { session ->
+        session.save(cpk)
+        latestId++
+    }
+
+    for (bundle in bundles) {
+        bundle.cpk = cpk
+        sessionFactory.transaction { session ->
+            session.save(bundle)
+            latestId++
         }
     }
 
     return latestId
 }
 
-private fun readAllBundlesFromDB(sessionFactory: SessionFactory): List<DBBundle> {
+private fun readAllCPKsFromDB(sessionFactory: SessionFactory): List<DBCpk> {
     return sessionFactory.transaction { session ->
         val cb: CriteriaBuilder = session.criteriaBuilder
-        val cq: CriteriaQuery<DBBundle> = cb.createQuery(DBBundle::class.java)
-        val rootEntry: Root<DBBundle> = cq.from(DBBundle::class.java)
-        val all: CriteriaQuery<DBBundle> = cq.select(rootEntry)
-        val allQuery: TypedQuery<DBBundle> = session.createQuery(all)
-        allQuery.resultList as List<DBBundle>
+        val cq: CriteriaQuery<DBCpk> = cb.createQuery(DBCpk::class.java)
+        val rootEntry: Root<DBCpk> = cq.from(DBCpk::class.java)
+        val all: CriteriaQuery<DBCpk> = cq.select(rootEntry)
+        val allQuery: TypedQuery<DBCpk> = session.createQuery(all)
+        allQuery.resultList as List<DBCpk>
     }
 }
+
 
 /******************************************
  * **** HIBERNATE CONFIGURATION ***********
