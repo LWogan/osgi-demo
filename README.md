@@ -3,7 +3,7 @@
 ### Build
 ```gradlew clean build``` to build the project and copy the subproject bundles built to the launchers resources folder
 
-### Run
+### Launcher
 Main.kt will:
 - create a Hibernate session
 - treat the defined resource dirs of bundles as CPKs
