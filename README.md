@@ -3,6 +3,9 @@
 ### Build
 ```gradlew clean build``` to build the project and copy the subproject bundles built to the launchers resources folder
 
+### Schema Design
+https://github.com/corda/platform-eng-design/blob/lorcan/cpk-schema-design/core/corda-5/corda-5.0/osgi/cpk-schema-design.md
+
 ### Launcher
 Main.kt will:
 - create a Hibernate session
