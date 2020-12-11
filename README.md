@@ -3,14 +3,17 @@
 ### Build
 ```gradlew clean build``` to build the project and copy the subproject bundles built to the launchers resources folder
 
+### Schema Design
+https://github.com/corda/platform-eng-design/blob/lorcan/cpk-schema-design/core/corda-5/corda-5.0/osgi/cpk-schema-design.md
+
 ### Launcher
 Main.kt will:
 - create a Hibernate session
-- treat the defined resource dirs of bundles as CPKs
+- treat the defined resource dirs of bundles as CPK/Sandbox
 - each dir saved as a CPK to DB
-- all bundles in each dir saved to DB with a reference to it's CPK
+- all bundles in each dir saved to DB with a reference to it's CPK. For simplicity all main bundles dependencies are stored in one dir.
 - launch an OSGi framework
-- read "CPKs" from the DB, install the CPK bundles to their own sandbox
+- read "CPK"s from the DB, install the bundles to their own sandbox
 - give all sandboxes visibility to each other
 - start up all installed bundles from all sandboxes
 - greetings, yo and log-reader bundles communicate in their activator classes via OSGi Declarative Services
