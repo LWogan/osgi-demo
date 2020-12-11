@@ -6,7 +6,7 @@ import org.osgi.framework.wiring.BundleCapability
 import org.osgi.framework.wiring.BundleRequirement
 import org.osgi.framework.wiring.BundleRevision
 
-class IsolatingResolverHook(private var currentSandbox: Sandbox?, private var sandboxes: HashSet<Sandbox>) : ResolverHook {
+class IsolatingResolverHook(private val currentSandbox: Sandbox?, private var sandboxes: HashSet<Sandbox>) : ResolverHook {
 
     /**
      * Filter bundles that don't match the current installed (but not yet started) bundle's sandbox.
@@ -16,18 +16,18 @@ class IsolatingResolverHook(private var currentSandbox: Sandbox?, private var sa
         filterRevisionCandidatesBySandbox(candidates)
     }
 
-    override fun filterSingletonCollisions(singleton: BundleCapability?, collisionCandidates: MutableCollection<BundleCapability>?) {
+    override fun filterSingletonCollisions(singleton: BundleCapability, collisionCandidates: MutableCollection<BundleCapability>) {
         filterCapabilityCandidatesBySandbox(collisionCandidates)
     }
 
     /**
-     * Filter the candidates for this bundles required capabilities and imported packages by removing candidates which
+     * Filter the candidates for this bundles requirements capabilities and imported packages by removing candidates which
      * are already in a sandbox.
      *
      * @param requirement the package required by this bundle
      * @param candidates bundles that export the current bundle's imports and other requirements.
      */
-    override fun filterMatches(requirement: BundleRequirement?, candidates: MutableCollection<BundleCapability>?) {
+    override fun filterMatches(requirement: BundleRequirement?, candidates: MutableCollection<BundleCapability>) {
         filterCapabilityCandidatesBySandbox(candidates)
     }
 
@@ -51,8 +51,8 @@ class IsolatingResolverHook(private var currentSandbox: Sandbox?, private var sa
      * If candidates are found in the current sandbox and another visible sandbox
      * then choose the candidate from it's own sandbox.
      */
-    private fun filterCapabilityCandidatesBySandbox(candidates: MutableCollection<BundleCapability>? ) {
-        var copyCandidates = candidates?.toMutableList()
+    private fun filterCapabilityCandidatesBySandbox(candidates: MutableCollection<BundleCapability> ) {
+        var copyCandidates = candidates.toMutableList()
 
         if (copyCandidates != null) {
             var candidateFoundInOwnSandbox : BundleCapability? = null
@@ -91,15 +91,15 @@ class IsolatingResolverHook(private var currentSandbox: Sandbox?, private var sa
     }
 }
 
-class IsolatingResolverHookFactory(private var sandboxes: HashSet<Sandbox>) : ResolverHookFactory {
+class IsolatingResolverHookFactory(private val sandboxes: HashSet<Sandbox>) : ResolverHookFactory {
 
     /**
-     * Get and set the triggering bundles sandbox to the resolver hook so it can be comoared
+     * Get and set the triggering bundles sandbox to the resolver hook so it can be compared
      * to candidate bundles sandboxes
      * @param triggers the bundle triggering the resolver
      */
-    override fun begin(triggers: MutableCollection<BundleRevision>?): ResolverHook {
-        val bundle = triggers!!.single().bundle
+    override fun begin(triggers: Collection<BundleRevision>): ResolverHook {
+        val bundle = triggers.single().bundle
         val sandbox = bundle.owningSandbox(sandboxes)
         return IsolatingResolverHook(sandbox, sandboxes)
     }

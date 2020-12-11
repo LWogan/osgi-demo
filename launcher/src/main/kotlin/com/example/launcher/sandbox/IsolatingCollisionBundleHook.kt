@@ -12,7 +12,7 @@ import org.osgi.framework.hooks.bundle.CollisionHook
 */
 class IsolatingCollisionBundleHook(private var sandboxes: HashSet<Sandbox>) : CollisionHook {
 
-    override fun filterCollisions(operationType: Int, target: Bundle?, collisionCandidates: MutableCollection<Bundle>?) {
+    override fun filterCollisions(operationType: Int, target: Bundle, collisionCandidates: MutableCollection<Bundle>?) {
         var copyCandidates = collisionCandidates?.toMutableList()
 
         if (copyCandidates != null) {

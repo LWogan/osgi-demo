@@ -12,10 +12,11 @@ import org.osgi.framework.hooks.bundle.FindHook
  */
 class IsolatingFindHook(private var sandboxes: HashSet<Sandbox>) :  FindHook {
 
-    override fun find(context: BundleContext?, bundles: MutableCollection<Bundle>?) {
-        var targetSandbox = context?.bundle?.owningSandbox(sandboxes)
-        var copyCandidates = bundles?.toMutableList()
+    override fun find(context: BundleContext, bundles: MutableCollection<Bundle>) {
+        var targetSandbox = context.bundle?.owningSandbox(sandboxes)
+        var copyCandidates = bundles.toMutableList()
 
+        context.getBundle()
         if (copyCandidates != null) {
             for (candidate in copyCandidates) {
                 var candidateSandbox = candidate.owningSandbox(sandboxes)
