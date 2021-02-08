@@ -1,4 +1,4 @@
-package com.example.launcher.sandbox
+package com.example.osgi.sandbox
 
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
@@ -26,7 +26,7 @@ class Sandbox private constructor(val name: String, private val bundleContext: B
 
     fun installBundle(location: String, stream: InputStream?) : Bundle {
         //TODO it's not possible to determine if you are adding a bundle to a sandbox twice inside the hooks but may be possible to validate here
-        var bundle = bundleContext.installBundle(name + SANDBOX_NAME_DELIM + location, stream)
+        val bundle = bundleContext.installBundle(name + SANDBOX_NAME_DELIM + location, stream)
         installedBundles.add(bundle.bundleId)
         return bundle
     }

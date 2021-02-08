@@ -1,7 +1,7 @@
 # OSGi Launcher and Sandbox Installer Demo
 
 ### Build
-```gradlew clean build``` to build the project and copy the subproject bundles built to the launchers resources folder
+```gradlew build``` to build the project and copy the subproject bundles built to the launchers resources folder
 
 ### Schema Design
 https://github.com/corda/platform-eng-design/blob/lorcan/cpk-schema-design/core/corda-5/corda-5.0/osgi/cpk-schema-design.md
@@ -26,9 +26,11 @@ Main.kt will:
 #### Yo Bundle
 - exposes OSGi service com.example.osgi.yo.service
 - hides service impl com.example.osgi.yo.impl
-- registers yo service OSGi framework in activator
 
 #### Log reader Bundle
 - additional example of OSGi Service
 - centralises logging via the OSGi Logger Service
 - other methods of logging are available. this was included for demo purposes.
+
+#### Sandbox Bundle 
+Sandbox functionality exposed in a bundle to be installed into the network. 

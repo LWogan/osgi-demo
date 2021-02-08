@@ -1,7 +1,7 @@
 package com.example.launcher
 
 import com.example.launcher.activator.HostActivator
-import com.example.launcher.sandbox.*
+import com.example.osgi.sandbox.*
 import org.apache.felix.framework.Felix
 import org.apache.felix.framework.util.FelixConstants
 import org.hibernate.Session
@@ -71,7 +71,11 @@ fun makeSandboxesAllVisibleToEachOther(sandboxFactory: SandboxFactory) {
     for (sandbox in sandboxFactory.sandboxes) {
         var currentSandbox = sandbox
         for (nextSandbox in sandboxFactory.sandboxes) {
-            currentSandbox.addVisibility(nextSandbox)
+            if (!(nextSandbox.name == "/yo" && currentSandbox.name == "/greetings") &&
+                !(nextSandbox.name == "/sandbox" && currentSandbox.name == "/greetings")) {
+                currentSandbox.addVisibility(nextSandbox)
+            }
+
         }
     }
 }
@@ -134,8 +138,9 @@ private fun saveBundlesFromResourcesToDbAsCPKs(sessionFactory: SessionFactory) {
     var latestId = 0
     latestId = saveBundlesAndCPkToDB(sessionFactory, "/dependencies", latestId)
     latestId = saveBundlesAndCPkToDB(sessionFactory, "/logger", latestId)
+    latestId = saveBundlesAndCPkToDB(sessionFactory, "/sandbox", latestId)
     latestId = saveBundlesAndCPkToDB(sessionFactory, "/yo", latestId)
-    saveBundlesAndCPkToDB(sessionFactory, "/greetings", latestId)
+    latestId = saveBundlesAndCPkToDB(sessionFactory, "/greetings", latestId)
 }
 
 private fun saveBundlesAndCPkToDB(sessionFactory: SessionFactory, dir: String, id: Int): Int {

@@ -61,7 +61,12 @@ task copyLogReaderJarToResources(type: Copy) {
     into "launcher/src/main/resources/logger/"
 }
 
-task copyJarsToLauncherResources(dependsOn: [copyYoJarToResources, copyGreetingsJarToResources, copyLogReaderJarToResources])
+task copySandboxServiceJarToResources(type: Copy) {
+    from 'sandbox/build/libs/sandbox-1.0.0-SNAPSHOT.jar'
+    into "launcher/src/main/resources/sandbox/"
+}
+
+task copyJarsToLauncherResources(dependsOn: [copyYoJarToResources, copyGreetingsJarToResources, copyLogReaderJarToResources, copySandboxServiceJarToResources])
 
 
 build.finalizedBy(copyJarsToLauncherResources)

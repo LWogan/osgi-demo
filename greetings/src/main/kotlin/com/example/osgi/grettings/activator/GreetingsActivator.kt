@@ -1,23 +1,26 @@
 package com.example.osgi.grettings.activator
 
-import com.example.osgi.yo.service.YoService
+import com.example.osgi.sandbox.service.SandboxService
+import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component
 class GreetingsActivator @Activate constructor(
-        @Reference(service = YoService::class)
-        private val yoService: YoService,
         @Reference(service = org.osgi.service.log.LoggerFactory::class)
         private val logger: org.osgi.service.log.Logger
 ) {
 
     @Activate
-    fun doIt() {
+    fun doIt(context: BundleContext) {
         logger.info("Activated GreetingsActivator {}", this::class.java)
-        logger.info("GreetingsActivator calling out to yo service...")
-        yoService.doSomething()
+
+        val ref = context.getServiceReference(SandboxService::class.java.name)
+        if (ref != null) {
+            val sandboxService: SandboxService = context.getService(ref) as SandboxService
+            sandboxService.printHello(context)
+        }
     }
 
 }

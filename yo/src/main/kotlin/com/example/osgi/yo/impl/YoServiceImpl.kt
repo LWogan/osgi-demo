@@ -9,9 +9,8 @@ import org.osgi.service.log.LoggerFactory
 
 @Component(immediate = true)
 class YoServiceImpl @Activate constructor(
-        @Reference(service = LoggerFactory::class)
-        private val logger: Logger
-) : YoService {
+    @Reference(service = LoggerFactory::class)
+    private val logger: Logger) : YoService {
 
     override fun doSomething() {
         logger.info("I am the YoService... doing something?")

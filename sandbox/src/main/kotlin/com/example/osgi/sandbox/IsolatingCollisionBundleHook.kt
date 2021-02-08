@@ -1,4 +1,4 @@
-package com.example.launcher.sandbox
+package com.example.osgi.sandbox
 
 
 import org.osgi.framework.Bundle
@@ -13,11 +13,12 @@ import org.osgi.framework.hooks.bundle.CollisionHook
 class IsolatingCollisionBundleHook(private var sandboxes: HashSet<Sandbox>) : CollisionHook {
 
     override fun filterCollisions(operationType: Int, target: Bundle, collisionCandidates: MutableCollection<Bundle>?) {
-        var copyCandidates = collisionCandidates?.toMutableList()
+
+        val copyCandidates = collisionCandidates?.toMutableList()
 
         if (copyCandidates != null) {
             for (candidate in copyCandidates) {
-                var candidateSandbox = candidate.owningSandbox(sandboxes)
+                val candidateSandbox = candidate.owningSandbox(sandboxes)
 
                 //candidate lives in main bundle space so should be possible to find
                 if (candidateSandbox == null) {
@@ -27,7 +28,7 @@ class IsolatingCollisionBundleHook(private var sandboxes: HashSet<Sandbox>) : Co
                     //if a bundle is being installed it wont have a sandbox yet until install is finished
                     //remove bundles in existing sandboxes.
                     //this will not catch a user from installing a bundle to the same sandbox twice. That will result in an error later on.
-                    collisionCandidates?.remove(candidate)
+                    collisionCandidates.remove(candidate)
                 }
             }
         }

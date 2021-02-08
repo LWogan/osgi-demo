@@ -20,6 +20,7 @@ include 'greetings'
 include 'yo'
 include 'launcher'
 include 'log-reader'
+include 'sandbox'
 
 gradleEnterprise {
     buildScan {

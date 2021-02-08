@@ -19,8 +19,10 @@ repositories {
 }
 
 dependencies {
+    api project(":sandbox")
     api "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlin_version"
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlin_version"
+    api "org.osgi:org.osgi.service.component.annotations:$osgi_component_annotations_version"
 
     implementation "org.apache.felix:org.apache.felix.framework:$felix_version"
 

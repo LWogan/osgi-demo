@@ -1,4 +1,4 @@
-package com.example.launcher.sandbox
+package com.example.osgi.sandbox
 
 import org.osgi.framework.hooks.resolver.ResolverHook
 import org.osgi.framework.hooks.resolver.ResolverHookFactory
@@ -54,37 +54,35 @@ class IsolatingResolverHook(private val currentSandbox: Sandbox?, private var sa
     private fun filterCapabilityCandidatesBySandbox(candidates: MutableCollection<BundleCapability> ) {
         var copyCandidates = candidates.toMutableList()
 
-        if (copyCandidates != null) {
-            var candidateFoundInOwnSandbox : BundleCapability? = null
+        var candidateFoundInOwnSandbox : BundleCapability? = null
 
-            for (candidate in copyCandidates) {
-                var candidateBundle = candidate.revision.bundle
-                var candidateSandbox = candidateBundle.owningSandbox(sandboxes)
+        for (candidate in copyCandidates) {
+            val candidateBundle = candidate.revision.bundle
+            val candidateSandbox = candidateBundle.owningSandbox(sandboxes)
 
-                if (candidateSandbox == null) {
-                    //candidate bundle is in main bundle space
-                    continue
-                }
-                //TODO: double check null assertions for currentsandbox
-                else if (currentSandbox == null) {
-                    //current bundle is in main bundle space but candidate is in a sandbox
-                    candidates?.remove(candidate)
-                } else if (currentSandbox!!.installedBundles.contains(candidateBundle.bundleId)) {
-                    //candidate bundle is in same sandbox and should be chosen
-                    candidateFoundInOwnSandbox = candidate
-                    break
-                } else if (!currentSandbox!!.isVisibleNonTransitive(candidateSandbox)) {
-                    //candidate is in another sandbox and is not visible
-                    candidates?.remove(candidate)
-                }
+            if (candidateSandbox == null) {
+                //candidate bundle is in main bundle space
+                continue
             }
+            //TODO: double check null assertions for currentsandbox
+            else if (currentSandbox == null) {
+                //current bundle is in main bundle space but candidate is in a sandbox
+                candidates.remove(candidate)
+            } else if (currentSandbox.installedBundles.contains(candidateBundle.bundleId)) {
+                //candidate bundle is in same sandbox and should be chosen
+                candidateFoundInOwnSandbox = candidate
+                break
+            } else if (!currentSandbox.isVisibleNonTransitive(candidateSandbox)) {
+                //candidate is in another sandbox and is not visible
+                candidates.remove(candidate)
+            }
+        }
 
-            if (candidateFoundInOwnSandbox != null && candidates?.size!! > 1) {
-                //only use candidate from same sandbox. list at this point will contain candidates from own sandbox and others
-                for (candidate in copyCandidates) {
-                    if (candidate != candidateFoundInOwnSandbox) {
-                        candidates.remove(candidate)
-                    }
+        if (candidateFoundInOwnSandbox != null && candidates.size > 1) {
+            //only use candidate from same sandbox. list at this point will contain candidates from own sandbox and others
+            for (candidate in copyCandidates) {
+                if (candidate != candidateFoundInOwnSandbox) {
+                    candidates.remove(candidate)
                 }
             }
         }
